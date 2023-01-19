@@ -1,60 +1,109 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router" target="_blank" rel="noopener">router</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
-  </div>
+  <div class="container">
+        <div role="form">
+          <p>一个演示ThreeDXF预览的小例子</p>
+            <div class="form-group">
+                <label for="exampleInputFile">选择一个DXF文件</label>
+                <input type="file" accept=".dxf" id="dxf" name="file" @change="onFileSelected">
+                <div class="progress progress-striped" style="width: 300px;">
+                    <div id="file-progress-bar" class="progress-bar progress-bar-success" role="progressbar" style="width: 0">
+                    </div>
+                </div>
+                <div id="file-description" class="help-block"></div>
+            </div>
+            <p>在画布上悬停时：左键单击就可以平移。鼠标滚轮可放大或缩小图像，字体显示也可以替换，如需显示文字，把下方注释代码打开即可显示</p>
+        </div>
+        <div class="code-editor-wrapper" v-loading="dxfLoading">
+          <div id="dxf-view"  ref="dxfView" class="dxfView" ></div>
+        </div>
+       
+        <!-- <div id="dxf-content-container">
+            <pre id="dxf-content">
+            </pre>
+        </div> -->
+    </div>
 </template>
 
 <script>
+import DxfParser from 'dxf-parser'
+import { Viewer } from '/public/threedxf/three-dxf.js'
 export default {
-  name: 'HelloWorld',
-  props: {
-    msg: String
+  name: 'ThreeDXF',
+  data () {
+    return {
+      dxfLoading:false
+    }
+  },
+  methods:{
+    onFileSelected(evt) {
+      let self = this;
+        var file = evt.target.files[0];
+        var reader = new FileReader();
+        reader.onprogress = self.updateProgress;
+        reader.onloadend = self.onSuccess;
+        reader.onabort = self.abortUpload;
+        reader.onerror = self.errorHandler;
+        reader.readAsText(file);
+    },
+    errorHandler(evt) {
+      switch(evt.target.error.code) {
+      case evt.target.error.NOT_FOUND_ERR:
+          alert('File Not Found!');
+          break;
+      case evt.target.error.NOT_READABLE_ERR:
+          alert('File is not readable');
+          break;
+      case evt.target.error.ABORT_ERR:
+          break;
+      default:
+          alert('An error occurred reading this file.');
+      }
+  },
+  onSuccess(evt){;
+    this.dxfLoading=true
+      var fileReader = evt.target;
+      if(fileReader.error) return console.log("error onloadend!?");
+      var parser = new DxfParser();
+      var dxf = parser.parseSync(fileReader.result);
+ 
+      // let dxfContentEl = document.getElementById('dxf-content');
+       
+      // if(dxf) {
+      //     dxfContentEl.innerHTML = JSON.stringify(dxf, null, 2);
+      //     console.log('json',JSON.stringify(dxf, null, 2))
+      // } else {
+      //     dxfContentEl.innerHTML = 'No data.';
+      // }
+      document.getElementById('dxf-view').innerHTML = ""
+      let  width=this.$refs.dxfView.offsetWidth;
+      let  height=this.$refs.dxfView.offsetHeight;
+      Viewer(dxf, document.getElementById('dxf-view'), width, height,this.LoadingClose);
+       
+  },
+  LoadingClose(){
+      this.dxfLoading=false;
+    },
+  handleDragOver(evt) {
+      evt.stopPropagation();
+      evt.preventDefault();
+      evt.dataTransfer.dropEffect = 'copy';
+  },
   }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
+ .code-editor-wrapper {
+    margin: 56px auto 0 auto;
+    width: 70vw !important;
+    height:70vh;
+    border: 1px solid #000;
+  }
+
+  .dxfView{
+      width: 70vw;
+      height:70vh;
+      background: #fff;
+    }
 </style>
