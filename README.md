@@ -1,4 +1,4 @@
-# dxf
+# three-dxf-vue
 
 ## Project setup
 ```
